@@ -511,9 +511,11 @@ app.post('/api/verify-email', async (req, res) => {
       db.query(markUsedSql, [user.code_id]);
       
       // Update user as verified and active
+      // Update email as verified, but enforce registration approval workflow for students
       const updateUserSql = `
         UPDATE users 
-        SET email_verified = TRUE, account_status = 'active' 
+        SET email_verified = TRUE, 
+            account_status = CASE WHEN role = 'student' AND account_status = 'pending' THEN 'pending' ELSE account_status END
         WHERE id = ?
       `;
       
@@ -526,7 +528,10 @@ app.post('/api/verify-email', async (req, res) => {
         }
         
         res.json({ 
-          message: "Email verified successfully! Please log in.",
+          message: user.role === 'student' && user.account_status === 'pending' 
+            ? "Email verified successfully! Your account registration is now pending review and approval by Faculty, Dean, or Admin before you can log in."
+            : "Email verified successfully! Please log in.",
+          isPendingApproval: user.role === 'student' && user.account_status === 'pending',
           success: true
         });
       });
