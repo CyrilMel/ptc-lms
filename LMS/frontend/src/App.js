@@ -7110,14 +7110,15 @@ const Sidebar = ({
   if (isDean) {
     navigationItems.push(
       { id: 'TaskMonitoring', name: 'Task Monitoring', icon: ClipboardList },
-      { id: 'Reports', name: 'Reports', icon: TrendingUp }
+      { id: 'Reports', name: 'Reports', icon: TrendingUp },
+      { id: 'UserManagement', name: 'Student Management', icon: GraduationCap }
     );
   }
 
   // Admin-only items (DFD Diagram 0)
   if (isAdmin) {
     navigationItems.push(
-      { id: 'UserManagement', name: 'User Management', icon: Shield },
+      { id: 'UserManagement', name: 'Student Management', icon: GraduationCap },
       { id: 'ActivityLogs', name: 'Activity Logs', icon: Activity },
       { id: 'Verifications', name: 'Verifications', icon: CheckCircle },
       { id: 'Settings', name: 'Settings', icon: Settings }
@@ -7127,6 +7128,7 @@ const Sidebar = ({
   // Professor-only items (DFD Diagram 0)
   if (isProfessor) {
     navigationItems.push(
+      { id: 'UserManagement', name: 'Student Management', icon: GraduationCap },
       { id: 'Tasks', name: t.todo, icon: CheckSquare }
     );
   }
@@ -9298,7 +9300,7 @@ const App = () => {
 
     // Teacher/Professor access (academic faculty only)
     if (['teacher', 'professor'].includes(userRole)) {
-      return teacherOnlyItems.includes(navItem) || ['Home', 'Calendar', 'Settings', 'Subject'].includes(navItem);
+      return teacherOnlyItems.includes(navItem) || ['Home', 'Calendar', 'Settings', 'Subject', 'UserManagement', 'StudentManagement'].includes(navItem);
     }
 
     // Admin/Dean access (administrative faculty)
@@ -9422,7 +9424,8 @@ const App = () => {
       case 'FacultyReports':
         return <ReportsView setActiveNav={setActiveNav} user={user} isDarkMode={isDarkMode} />;
       case 'UserManagement':
-        return <AdminUserManagement isDarkMode={isDarkMode} />;
+      case 'StudentManagement':
+        return <AdminUserManagement user={user} isDarkMode={isDarkMode} />;
       case 'ActivityLogs':
         return <ActivityLogsView setActiveNav={setActiveNav} user={user} isDarkMode={isDarkMode} />;
       case 'Verifications':

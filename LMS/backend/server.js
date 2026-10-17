@@ -33,6 +33,27 @@ db.connect((err) => {
 
 // Initialize database schema with required fields
 function initializeDatabase() {
+
+  // Alter users table to support student approval workflow if columns do not exist
+  const alterColumns = [
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255) NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id VARCHAR(50) NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS program VARCHAR(100) NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS section VARCHAR(50) NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255) NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_by_role VARCHAR(50) NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(255) NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP NULL",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL",
+    "ALTER TABLE users MODIFY COLUMN account_status VARCHAR(50) DEFAULT 'pending'"
+  ];
+  alterColumns.forEach(sql => {
+    db.query(sql, (err) => {
+      // Ignore if column exists or MySQL version differences
+    });
+  });
+
   const createUsersTable = `
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -579,12 +600,17 @@ app.post('/api/register', async (req, res) => {
       const passwordHash = await bcrypt.hash(password, saltRounds);
       
       // Insert user into database
+      const fullName = req.body.fullName || req.body.name || "";
+      const studentId = req.body.studentId || "";
+      const program = req.body.program || "BS Information Technology";
+      const section = req.body.section || "BSIT 3-A";
+
       const insertSql = `
-        INSERT INTO users (email, password_hash, role, email_verified, account_status) 
-        VALUES (?, ?, ?, FALSE, 'pending')
+        INSERT INTO users (email, password_hash, role, email_verified, account_status, full_name, student_id, program, section) 
+        VALUES (?, ?, ?, FALSE, 'pending', ?, ?, ?, ?)
       `;
       
-      db.query(insertSql, [normalizedEmail, passwordHash, userRole], async (err, result) => {
+      db.query(insertSql, [normalizedEmail, passwordHash, userRole, fullName, studentId, program, section], async (err, result) => {
         if (err) {
           console.log("Database error during user creation:", err.message);
           return res.status(500).json({ 
@@ -673,10 +699,24 @@ app.post('/api/login', async (req, res) => {
         });
       }
       
-      // Check account status
-      if (user.account_status !== 'active') {
+      // Check account approval status for registration workflow
+      if (user.role === 'student') {
+        if (user.account_status === 'pending') {
+          return res.status(403).json({
+            status: "pending",
+            message: "Your registration is currently pending approval by Faculty, Dean, or Admin. Please wait for an administrator to review your application."
+          });
+        }
+        if (user.account_status === 'rejected') {
+          return res.status(403).json({
+            status: "rejected",
+            message: `Your account registration was rejected.${user.rejection_reason ? " Reason: " + user.rejection_reason : ""} Please contact administration or submit a new registration.`
+          });
+        }
+      }
+      if (user.account_status !== 'active' && user.account_status !== 'approved') {
         return res.status(403).json({ 
-          message: "Your account is not active. Please verify your email or contact support." 
+          message: "Your account is not active. Please contact support or administration." 
         });
       }
       
@@ -710,6 +750,108 @@ app.get('/api/admin/users', (req, res) => {
     }
     
     res.json({ users: results });
+  });
+});
+
+
+// --- STUDENT MANAGEMENT & REGISTRATION APPROVAL WORKFLOW (Faculty, Dean, Admin) ---
+const isAuthorizedReviewer = (role) => {
+  const normalized = (role || "").toLowerCase();
+  return ["professor", "teacher", "faculty", "dean", "administrator", "admin"].includes(normalized);
+};
+
+// GET /api/students - List all student accounts with approval metadata
+app.get("/api/students", (req, res) => {
+  const requesterRole = req.headers["x-user-role"] || req.query.userRole;
+  if (requesterRole && !isAuthorizedReviewer(requesterRole)) {
+    return res.status(403).json({ message: "Access denied. Only Faculty, Dean, or Admin can access Student Management." });
+  }
+
+  const sql = `
+    SELECT id, email, full_name, student_id, program, section, role, email_verified, 
+           account_status, approved_by, approved_by_role, approved_at, rejected_by, 
+           rejected_at, rejection_reason, created_at, updated_at
+    FROM users
+    WHERE role = 'student'
+    ORDER BY CASE WHEN account_status = 'pending' THEN 0 ELSE 1 END, created_at DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.log("Error fetching students:", err.message);
+      return res.status(500).json({ message: "Database error fetching students" });
+    }
+    res.json({ students: results });
+  });
+});
+
+// POST /api/students/:id/approve - Approve a student registration
+app.post("/api/students/:id/approve", (req, res) => {
+  const { id } = req.params;
+  const approverRole = req.headers["x-user-role"] || req.body.approverRole || "Admin";
+  const approverName = req.headers["x-user-name"] || req.body.approverName || "Administrator";
+
+  if (!isAuthorizedReviewer(approverRole)) {
+    return res.status(403).json({ message: "Unauthorized. Only Faculty, Dean, or Admin can approve student registrations." });
+  }
+
+  const updateSql = `
+    UPDATE users
+    SET account_status = 'approved',
+        approved_by = ?,
+        approved_by_role = ?,
+        approved_at = CURRENT_TIMESTAMP,
+        rejected_by = NULL,
+        rejected_at = NULL,
+        rejection_reason = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND role = 'student'
+  `;
+
+  db.query(updateSql, [approverName, approverRole, id], (err, result) => {
+    if (err) {
+      console.log("Error approving student:", err.message);
+      return res.status(500).json({ message: "Failed to approve student" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Student record not found" });
+    }
+    res.json({ success: true, message: "Student registration approved successfully!" });
+  });
+});
+
+// POST /api/students/:id/reject - Reject a student registration
+app.post("/api/students/:id/reject", (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const reviewerRole = req.headers["x-user-role"] || req.body.approverRole || "Admin";
+  const reviewerName = req.headers["x-user-name"] || req.body.approverName || "Administrator";
+
+  if (!isAuthorizedReviewer(reviewerRole)) {
+    return res.status(403).json({ message: "Unauthorized. Only Faculty, Dean, or Admin can reject student registrations." });
+  }
+
+  const updateSql = `
+    UPDATE users
+    SET account_status = 'rejected',
+        rejected_by = ?,
+        rejected_at = CURRENT_TIMESTAMP,
+        rejection_reason = ?,
+        approved_by = NULL,
+        approved_at = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND role = 'student'
+  `;
+
+  db.query(updateSql, [reviewerName, reason || "Did not meet admission / verification criteria", id], (err, result) => {
+    if (err) {
+      console.log("Error rejecting student:", err.message);
+      return res.status(500).json({ message: "Failed to reject student registration" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Student record not found" });
+    }
+    res.json({ success: true, message: "Student registration rejected." });
   });
 });
 
