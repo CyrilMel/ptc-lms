@@ -6771,8 +6771,6 @@ const VideoMeetingModal = ({
     } catch (e) {}
   }, [savedMeetingLink, classCode]);
 
-  if (!activeMeeting?.isOpen) return null;
-
   const isProfessor = user?.role === 'professor' || user?.role === 'teacher';
   const isAdmin = user?.role === 'admin' || user?.role === 'administrator';
   const isFaculty = isProfessor || isAdmin;
@@ -9797,7 +9795,8 @@ const App = () => {
         gradeComment={gradeComment}
         setGradeComment={setGradeComment}
       />
-      <VideoMeetingModal
+      {activeMeeting?.isOpen && (
+        <VideoMeetingModal
         activeMeeting={activeMeeting}
         setActiveMeeting={setActiveMeeting}
         isEmbeddedStream={isEmbeddedStream}
@@ -9808,6 +9807,7 @@ const App = () => {
         setActiveMeetingUrl={setActiveMeetingUrl}
         selectedCourseDetail={selectedCourseDetail}
       />
+      )}
       {user && (
         <FloatingChat 
           isAiChatOpen={isAiChatOpen}
