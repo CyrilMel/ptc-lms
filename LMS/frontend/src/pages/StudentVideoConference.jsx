@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Video, ExternalLink, Clock, Users, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 
-const StudentVideoConference = ({ isDarkMode }) => {
+const StudentVideoConference = ({ isDarkMode, user }) => {
   const [activeMeetings, setActiveMeetings] = useState([
     {
       id: 1,
@@ -61,7 +61,12 @@ const StudentVideoConference = ({ isDarkMode }) => {
 
   const handleJoinMeeting = (meeting) => {
     if (meeting.status === 'live' || meeting.status === 'upcoming') {
-      window.open(meeting.meetLink, '_blank');
+      const meetBase = process.env.REACT_APP_MEET_URL || 'http://localhost:5173';
+      const userParam = encodeURIComponent(user?.name || user?.username || 'Student User');
+      const roleParam = user?.role || 'student';
+      const roomParam = meeting.roomCode || meeting.subject || 'SP101-BSIT3J';
+      const targetUrl = `${meetBase}/?room=${roomParam}&name=${userParam}&role=${roleParam}`;
+      window.open(targetUrl, '_blank');
     }
   };
 

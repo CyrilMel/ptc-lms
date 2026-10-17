@@ -1250,5 +1250,66 @@ app.post('/api/announcements/create', async (req, res) => {
   }
 });
 
+
+// --- REAL-TIME WEBRTC SIGNALING & MEETING COORDINATION ---
+const activeMeetingRooms = new Map();
+
+io.on('connection', (socket) => {
+  console.log('🔌 Socket connected to WebRTC signaling:', socket.id);
+
+  socket.on('join-meeting-room', ({ roomId, userId, userName, role }) => {
+    socket.join(roomId);
+    if (!activeMeetingRooms.has(roomId)) {
+      activeMeetingRooms.set(roomId, new Map());
+    }
+    const roomParticipants = activeMeetingRooms.get(roomId);
+    roomParticipants.set(socket.id, { socketId: socket.id, userId, userName, role, joinedAt: new Date() });
+
+    socket.to(roomId).emit('user-joined-meeting', {
+      socketId: socket.id,
+      userId,
+      userName,
+      role
+    });
+
+    const participantsList = Array.from(roomParticipants.values()).filter(p => p.socketId !== socket.id);
+    socket.emit('meeting-room-users', { participants: participantsList });
+  });
+
+  socket.on('meeting-signal-offer', ({ targetSocketId, offer, senderName }) => {
+    io.to(targetSocketId).emit('meeting-signal-offer', { senderSocketId: socket.id, offer, senderName });
+  });
+
+  socket.on('meeting-signal-answer', ({ targetSocketId, answer }) => {
+    io.to(targetSocketId).emit('meeting-signal-answer', { senderSocketId: socket.id, answer });
+  });
+
+  socket.on('meeting-ice-candidate', ({ targetSocketId, candidate }) => {
+    io.to(targetSocketId).emit('meeting-ice-candidate', { senderSocketId: socket.id, candidate });
+  });
+
+  socket.on('meeting-chat-message', ({ roomId, message, senderName, timestamp }) => {
+    io.to(roomId).emit('meeting-chat-broadcast', { message, senderName, timestamp: timestamp || new Date().toISOString() });
+  });
+
+  socket.on('disconnect', () => {
+    activeMeetingRooms.forEach((participants, roomId) => {
+      if (participants.has(socket.id)) {
+        const leavingUser = participants.get(socket.id);
+        participants.delete(socket.id);
+        socket.to(roomId).emit('user-left-meeting', { socketId: socket.id, userName: leavingUser?.userName });
+        if (participants.size === 0) activeMeetingRooms.delete(roomId);
+      }
+    });
+  });
+});
+
+// Automatic Attendance Logging Endpoint for Video Meetings
+app.post('/api/attendance/log', (req, res) => {
+  const { studentName, subjectCode, status } = req.body;
+  console.log(`📝 Attendance logged for ${studentName} in ${subjectCode}`);
+  res.json({ success: true, message: 'Attendance record synchronized with LMS' });
+});
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

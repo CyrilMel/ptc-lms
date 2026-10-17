@@ -661,7 +661,17 @@ function App() {
 
     // Auto-skip login screen if authenticated credentials exist from LMS
     if (roomFromLMS && nameFromLMS) {
-      setStep('dashboard'); // Jumps straight to the Dashboard
+      const decodedName = decodeURIComponent(nameFromLMS);
+      const userRole = roleFromLMS || 'student';
+      setUser({
+        id: 'lms-' + Math.floor(Math.random() * 10000),
+        name: decodedName,
+        email: `${decodedName.toLowerCase().replace(/\s+/g, '.')}@ptc.edu.ph`,
+        role: userRole,
+        section: 'BSIT 3-A',
+        avatar: decodedName.charAt(0).toUpperCase()
+      });
+      setStep('lobby'); // Directly enter pre-meeting Lobby with credentials pre-filled
     }
   }, [])
   
