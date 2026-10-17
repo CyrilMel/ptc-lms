@@ -6745,15 +6745,8 @@ const VideoMeetingModal = ({
     } catch (e) {}
   };
 
-  if (!activeMeeting.isOpen) return null;
-
-  const isProfessor = user?.role === 'professor' || user?.role === 'teacher';
-  const isAdmin = user?.role === 'admin' || user?.role === 'administrator';
-  const isFaculty = isProfessor || isAdmin;
-  const meetingTitle = isFaculty ? 'Hosting Live Classroom (Host Controls)' : 'Joined Live Class (Student Mode)';
-
   // Generate room name based on class code
-  const classCode = selectedCourseDetail?.classCode || activeMeeting.title?.replace(/[^a-zA-Z0-9]/g, '') || 'SP101-BSIT3J';
+  const classCode = selectedCourseDetail?.classCode || activeMeeting?.title?.replace(/[^a-zA-Z0-9]/g, '') || 'SP101-BSIT3J';
   const roomName = `meet_room_${classCode}`;
   const userName = user?.name || user?.username || 'User';
   const userRole = user?.role || 'student';
@@ -6762,7 +6755,7 @@ const VideoMeetingModal = ({
   const ptcMeetBaseUrl = process.env.REACT_APP_PTC_MEET_URL || 'https://ptc-meet.app';
   const persistentRoomLink = `${ptcMeetBaseUrl}/room/PTC-${classCode}`;
 
-  // Load/save meeting link to localStorage
+  // Load/save meeting link to localStorage (Called unconditionally at top level)
   const [savedMeetingLink, setSavedMeetingLink] = useState(() => {
     try {
       const saved = localStorage.getItem(`ptc_meet_link_${classCode}`);
@@ -6777,6 +6770,13 @@ const VideoMeetingModal = ({
       localStorage.setItem(`ptc_meet_link_${classCode}`, savedMeetingLink);
     } catch (e) {}
   }, [savedMeetingLink, classCode]);
+
+  if (!activeMeeting?.isOpen) return null;
+
+  const isProfessor = user?.role === 'professor' || user?.role === 'teacher';
+  const isAdmin = user?.role === 'admin' || user?.role === 'administrator';
+  const isFaculty = isProfessor || isAdmin;
+  const meetingTitle = isFaculty ? 'Hosting Live Classroom (Host Controls)' : 'Joined Live Class (Student Mode)';
 
   const handleGenerateGoogleMeet = () => {
     // Generate new persistent room link with host privileges
