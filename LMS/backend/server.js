@@ -759,6 +759,98 @@ app.get('/api/admin/users', (req, res) => {
 });
 
 
+// Role-based User Management: Get accounts by role (admin, dean, professor, student)
+app.get("/api/users/role/:role", (req, res) => {
+  const { role } = req.params;
+  const requesterRole = (req.headers["x-user-role"] || req.query.userRole || "administrator").toLowerCase();
+  
+  const targetRole = role.toLowerCase();
+  const isAdmin = ["admin", "administrator"].includes(requesterRole);
+  const isDean = requesterRole === "dean";
+  const isFaculty = ["professor", "teacher", "faculty"].includes(requesterRole);
+
+  if (!isAdmin && !isDean && !isFaculty) {
+    return res.status(403).json({ message: "Access denied." });
+  }
+
+  if (["administrator", "admin", "dean"].includes(targetRole) && !isAdmin) {
+    return res.status(403).json({ message: "Access denied to administrative accounts." });
+  }
+
+  if (targetRole === "professor" && !isAdmin && !isDean) {
+    return res.status(403).json({ message: "Access denied to faculty accounts." });
+  }
+
+  const queryRoles = targetRole === "professor" ? ["professor", "teacher"] : [targetRole];
+  const placeholders = queryRoles.map(() => "?").join(",");
+
+  const sql = `
+    SELECT id, email, role, email_verified, account_status, created_at, updated_at
+    FROM users
+    WHERE role IN (${placeholders})
+    ORDER BY created_at DESC
+  `;
+
+  db.query(sql, queryRoles, (err, results) => {
+    if (err) {
+      console.log("Database error fetching users by role:", err.message);
+      return res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+    res.json({ users: results });
+  });
+});
+
+// Create new user account (role-authorized)
+app.post("/api/users", async (req, res) => {
+  const { email, password, role } = req.body;
+  if (!email || !role) {
+    return res.status(400).json({ message: "Email and role are required." });
+  }
+  const validRoles = ["student", "professor", "dean", "administrator"];
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ message: "Invalid role." });
+  }
+  try {
+    const defaultPassword = password || "PtcLms2026!";
+    const password_hash = await bcrypt.hash(defaultPassword, 10);
+    const sql = `
+      INSERT INTO users (email, password_hash, role, email_verified, account_status)
+      VALUES (?, ?, ?, TRUE, "active")
+    `;
+    db.query(sql, [email.trim().toLowerCase(), password_hash, role], (err, result) => {
+      if (err) {
+        if (err.code === "ER_DUP_ENTRY") {
+          return res.status(409).json({ message: "An account with this email already exists." });
+        }
+        return res.status(500).json({ message: "Failed to create user account." });
+      }
+      res.status(201).json({
+        success: true,
+        message: `${role} account created successfully.`,
+        userId: result.insertId
+      });
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error processing account creation." });
+  }
+});
+
+// Delete user account
+app.delete("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const requesterRole = (req.headers["x-user-role"] || "administrator").toLowerCase();
+  if (!["admin", "administrator", "dean"].includes(requesterRole)) {
+    return res.status(403).json({ message: "Access denied." });
+  }
+  const sql = "DELETE FROM users WHERE id = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: "Failed to remove user account." });
+    }
+    res.json({ success: true, message: "User account removed." });
+  });
+});
+
 // --- STUDENT MANAGEMENT & REGISTRATION APPROVAL WORKFLOW (Faculty, Dean, Admin) ---
 const isAuthorizedReviewer = (role) => {
   const normalized = (role || "").toLowerCase();

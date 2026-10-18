@@ -11,6 +11,9 @@ import {
   Plus, FolderPlus, Mail, Pencil, Edit3, BrainCircuit, HelpCircle, Layers, Image, Check, Shield, Key, Save, Eye, EyeOff, ZoomIn, ZoomOut, RotateCcw, GraduationCap, BarChart3, Award, ChevronLeft, ChevronRight, Archive, UserPlus, Building2, RefreshCw, MoreVertical
 } from 'lucide-react';
 import AdminUserManagement from './AdminUserManagement';
+import RoleManagementView from './components/RoleManagementView';
+import VerificationView from './components/VerificationView';
+import { ROLE_PERMISSIONS, canAccessModule } from './utils/permissions';
 import VideoMeeting from './VideoMeeting';
 import StudentSubjects from './pages/StudentSubjects';
 import StudentAssignments from './pages/StudentAssignments';
@@ -7106,29 +7109,35 @@ const Sidebar = ({
     );
   }
 
-  // Dean-only items (DFD Diagram 0)
+  // Dean-only items: Faculty Management, Student Management, Verification, Task Monitoring, Reports
   if (isDean) {
     navigationItems.push(
+      { id: 'FacultyManagement', name: 'Faculty Management', icon: Users },
+      { id: 'StudentManagement', name: 'Student Management', icon: GraduationCap },
+      { id: 'Verifications', name: 'Verification', icon: CheckCircle },
       { id: 'TaskMonitoring', name: 'Task Monitoring', icon: ClipboardList },
-      { id: 'Reports', name: 'Reports', icon: TrendingUp },
-      { id: 'UserManagement', name: 'Student Management', icon: GraduationCap }
+      { id: 'Reports', name: 'Reports', icon: TrendingUp }
     );
   }
 
-  // Admin-only items (DFD Diagram 0)
+  // Admin-only items: Admin Management, Dean Management, Faculty Management, Student Management, Verification, Activity Logs, Settings
   if (isAdmin) {
     navigationItems.push(
-      { id: 'UserManagement', name: 'Student Management', icon: GraduationCap },
+      { id: 'AdminManagement', name: 'Admin Management', icon: Shield },
+      { id: 'DeanManagement', name: 'Dean Management', icon: Award },
+      { id: 'FacultyManagement', name: 'Faculty Management', icon: Users },
+      { id: 'StudentManagement', name: 'Student Management', icon: GraduationCap },
+      { id: 'Verifications', name: 'Verification', icon: CheckCircle },
       { id: 'ActivityLogs', name: 'Activity Logs', icon: Activity },
-      { id: 'Verifications', name: 'Verifications', icon: CheckCircle },
       { id: 'Settings', name: 'Settings', icon: Settings }
     );
   }
 
-  // Professor-only items (DFD Diagram 0)
+  // Professor-only items: Student Management, Verification, Tasks
   if (isProfessor) {
     navigationItems.push(
-      { id: 'UserManagement', name: 'Student Management', icon: GraduationCap },
+      { id: 'StudentManagement', name: 'Student Management', icon: GraduationCap },
+      { id: 'Verifications', name: 'Verification', icon: CheckCircle },
       { id: 'Tasks', name: t.todo, icon: CheckSquare }
     );
   }
@@ -9298,13 +9307,26 @@ const App = () => {
       return studentOnlyItems.includes(navItem);
     }
 
+    const normalized = userRole.toLowerCase();
+
+    // Specific management and verification role guards
+    if (navItem === 'AdminManagement' || navItem === 'DeanManagement') {
+      return ['admin', 'administrator'].includes(normalized);
+    }
+    if (navItem === 'FacultyManagement') {
+      return ['admin', 'administrator', 'dean'].includes(normalized);
+    }
+    if (['StudentManagement', 'UserManagement', 'Verifications', 'Verification'].includes(navItem)) {
+      return ['admin', 'administrator', 'dean', 'professor', 'teacher', 'faculty'].includes(normalized);
+    }
+
     // Teacher/Professor access (academic faculty only)
-    if (['teacher', 'professor'].includes(userRole)) {
-      return teacherOnlyItems.includes(navItem) || ['Home', 'Calendar', 'Settings', 'Subject', 'UserManagement', 'StudentManagement'].includes(navItem);
+    if (['teacher', 'professor', 'faculty'].includes(normalized)) {
+      return teacherOnlyItems.includes(navItem) || ['Home', 'Calendar', 'Settings', 'Subject'].includes(navItem);
     }
 
     // Admin/Dean access (administrative faculty)
-    if (['dean', 'admin', 'administrator'].includes(userRole)) {
+    if (['dean', 'admin', 'administrator'].includes(normalized)) {
       return adminOnlyItems.includes(navItem) || teacherOnlyItems.includes(navItem) || ['Home', 'Calendar', 'Settings', 'Subject'].includes(navItem);
     }
 
@@ -9423,13 +9445,20 @@ const App = () => {
         return <TaskMonitoringView setActiveNav={setActiveNav} user={user} isDarkMode={isDarkMode} />;
       case 'FacultyReports':
         return <ReportsView setActiveNav={setActiveNav} user={user} isDarkMode={isDarkMode} />;
+      case 'AdminManagement':
+        return <RoleManagementView moduleId="AdminManagement" moduleTitle="Admin Management" targetRole="administrator" icon={Shield} currentUser={user} isDarkMode={isDarkMode} />;
+      case 'DeanManagement':
+        return <RoleManagementView moduleId="DeanManagement" moduleTitle="Dean Management" targetRole="dean" icon={Award} currentUser={user} isDarkMode={isDarkMode} />;
+      case 'FacultyManagement':
+        return <RoleManagementView moduleId="FacultyManagement" moduleTitle="Faculty Management" targetRole="professor" icon={Users} currentUser={user} isDarkMode={isDarkMode} />;
       case 'UserManagement':
       case 'StudentManagement':
-        return <AdminUserManagement user={user} isDarkMode={isDarkMode} />;
+        return <RoleManagementView moduleId="StudentManagement" moduleTitle="Student Management" targetRole="student" icon={GraduationCap} currentUser={user} isDarkMode={isDarkMode} />;
       case 'ActivityLogs':
         return <ActivityLogsView setActiveNav={setActiveNav} user={user} isDarkMode={isDarkMode} />;
       case 'Verifications':
-        return <VerificationsView setActiveNav={setActiveNav} user={user} isDarkMode={isDarkMode} />;
+      case 'Verification':
+        return <VerificationView user={user} isDarkMode={isDarkMode} setActiveNav={setActiveNav} />;
       case 'Settings':
         return <SettingsView
           setActiveNav={setActiveNav}
