@@ -11,6 +11,7 @@ import {
   Plus, FolderPlus, Mail, Pencil, Edit3, BrainCircuit, HelpCircle, Layers, Image, Check, Shield, Key, Save, Eye, EyeOff, ZoomIn, ZoomOut, RotateCcw, GraduationCap, BarChart3, Award, ChevronLeft, ChevronRight, Archive, UserPlus, Building2, RefreshCw, MoreVertical
 } from 'lucide-react';
 import AdminUserManagement from './AdminUserManagement';
+import UserAccountInfo from './components/UserAccountInfo';
 import RoleManagementView from './components/RoleManagementView';
 import VerificationView from './components/VerificationView';
 import { ROLE_PERMISSIONS, canAccessModule } from './utils/permissions';
@@ -7164,12 +7165,23 @@ const Sidebar = ({
       >
         <div className="flex flex-col h-full min-w-[288px] p-6">
           {/* PTC Logo and Branding */}
-          <div className="mb-6 flex flex-col items-center">
-            <img src="/PTCLOGO.webp" alt="PTC Logo" className="w-16 h-16 object-contain mb-3" />
-            <h1 className={`font-bold uppercase tracking-wide text-sm text-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Arial, sans-serif' }}>
+          <div className="mb-4 flex flex-col items-center">
+            <img src="/PTCLOGO.webp" alt="PTC Logo" className="w-14 h-14 object-contain mb-2" />
+            <h1 className={`font-bold uppercase tracking-wide text-xs text-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Arial, sans-serif' }}>
               PATEROS TECHNOLOGICAL COLLEGE
             </h1>
           </div>
+
+          {/* Current Logged-In Account Info Section */}
+          <UserAccountInfo
+            user={user}
+            userProfile={userProfile}
+            isDarkMode={isDarkMode}
+            onProfileClick={() => {
+              setActiveNav('Profile');
+              setIsMobileSidebarOpen(false);
+            }}
+          />
 
           {/* Nav links rendering loop */}
           <nav className="flex-1 space-y-1 overflow-y-auto">
@@ -9433,8 +9445,6 @@ const App = () => {
         return <StudentProfile userProfile={userProfile} setUserProfile={setUserProfile} isDarkMode={isDarkMode} />;
       case 'Announcements':
         return <StudentAnnouncements isDarkMode={isDarkMode} />;
-      case 'Courses':
-        return <CoursesView setActiveNav={setActiveNav} filteredCourses={filteredCourses} handleCourseClick={handleCourseClick} studentEnrollments={studentEnrollments} setStudentEnrollments={setStudentEnrollments} user={user} isDarkMode={isDarkMode} setActiveMeeting={setActiveMeeting} setSelectedCourseDetail={setSelectedCourseDetail} />;
       case 'Gradebook':
         return <TasksView setActiveNav={setActiveNav} tasks={tasks} user={user} professorTasks={professorTasks} showSubmitModal={showSubmitModal} setShowSubmitModal={setShowSubmitModal} setSelectedTaskForSubmit={setSelectedTaskForSubmit} showGradingModal={showGradingModal} setShowGradingModal={setShowGradingModal} setSelectedTaskForGrading={setSelectedTaskForGrading} submittedTasks={submittedTasks} gradedTasks={gradedTasks} />;
       case 'Submissions':
