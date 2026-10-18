@@ -51,20 +51,6 @@ const AdminUserManagement = ({ isDarkMode, user: currentUserProp }) => {
   const initialDefaultStudents = [
     {
       id: 1,
-      full_name: 'Cyril Mel',
-      email: 'cyrilmel09282001@gmail.com',
-      student_id: '2023-00101',
-      program: 'BS Information Technology',
-      section: 'BSIT 3-A',
-      role: 'student',
-      account_status: 'approved',
-      approved_by: 'Prof. Cynthia B. Dulagan',
-      approved_by_role: 'Professor',
-      approved_at: '2026-10-15T09:30:00.000Z',
-      created_at: '2026-10-15T08:15:00.000Z',
-    },
-    {
-      id: 2,
       full_name: 'Sheryl Ann Delos Reyes',
       email: 'sheryl.delosreyes@ptc.edu.ph',
       student_id: '2023-00102',
@@ -78,7 +64,7 @@ const AdminUserManagement = ({ isDarkMode, user: currentUserProp }) => {
       created_at: '2026-10-16T10:00:00.000Z',
     },
     {
-      id: 3,
+      id: 2,
       full_name: 'Juan Carlo Santos',
       email: 'juan.santos@ptc.edu.ph',
       student_id: '2023-00105',
@@ -89,7 +75,7 @@ const AdminUserManagement = ({ isDarkMode, user: currentUserProp }) => {
       created_at: '2026-10-17T06:20:00.000Z',
     },
     {
-      id: 4,
+      id: 3,
       full_name: 'Maria Cristina Ramos',
       email: 'maria.ramos@ptc.edu.ph',
       student_id: '2023-00106',
@@ -100,7 +86,7 @@ const AdminUserManagement = ({ isDarkMode, user: currentUserProp }) => {
       created_at: '2026-10-17T07:45:00.000Z',
     },
     {
-      id: 5,
+      id: 4,
       full_name: 'Alex Gonzaga',
       email: 'alex.gonzaga@ptc.edu.ph',
       student_id: '2023-00088',
