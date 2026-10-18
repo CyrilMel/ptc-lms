@@ -76,7 +76,7 @@ const RoleManagementView = ({
       ];
     }
     return [
-      { id: 'st-1', email: 'student@paterostechnologicalcollege.edu.ph', full_name: 'Cyril Mel', student_id: '2023-00101', role: 'student', section: 'BSIT 3-A', account_status: 'active', created_at: '2026-10-05T08:00:00Z' },
+      { id: 'st-1', email: 'student@paterostechnologicalcollege.edu.ph', full_name: 'Test Account', student_id: '2023-00101', role: 'student', section: 'BSIT 3-A', account_status: 'active', created_at: '2026-10-05T08:00:00Z' },
       { id: 'st-2', email: 'sheryl.delosreyes@ptc.edu.ph', full_name: 'Sheryl Ann Delos Reyes', student_id: '2023-00102', role: 'student', section: 'BSIT 3-A', account_status: 'active', created_at: '2026-10-06T09:00:00Z' },
       { id: 'st-3', email: 'juan.santos@ptc.edu.ph', full_name: 'Juan Carlo Santos', student_id: '2023-00105', role: 'student', section: 'BSIT 3-B', account_status: 'pending', created_at: '2026-10-17T06:20:00Z' },
     ];
