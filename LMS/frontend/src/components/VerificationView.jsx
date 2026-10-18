@@ -9,8 +9,6 @@ import {
   Check,
   X,
   Mail,
-  UserCheck,
-  UserX,
   Eye,
   Shield,
   GraduationCap,
@@ -564,7 +562,7 @@ const VerificationView = ({ user, isDarkMode, setActiveNav }) => {
             >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <UserCheck size={24} />
+                  <CheckCircle size={24} />
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-slate-900 dark:text-white">
@@ -621,7 +619,7 @@ const VerificationView = ({ user, isDarkMode, setActiveNav }) => {
             >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                  <UserX size={24} />
+                  <XCircle size={24} />
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-slate-900 dark:text-white">

@@ -7,7 +7,7 @@ import {
   Search, Menu, X, Sparkles, LogOut, CheckSquare, Send,
   MessageSquare, FileText, Camera, Video, Moon, Sun, TrendingUp,
   CheckCircle, CheckCircle2, Activity, Zap, ExternalLink, Monitor, MonitorOff,
-  PhoneOff, MicOff, Hand, Copy, Mic, User, Clock, MapPin, Download, Trash2,
+  PhoneOff, MicOff, Hand, Copy, Mic, User, Users, Clock, MapPin, Download, Trash2,
   Plus, FolderPlus, Mail, Pencil, Edit3, BrainCircuit, HelpCircle, Layers, Image, Check, Shield, Key, Save, Eye, EyeOff, ZoomIn, ZoomOut, RotateCcw, GraduationCap, BarChart3, Award, ChevronLeft, ChevronRight, Archive, UserPlus, Building2, RefreshCw, MoreVertical
 } from 'lucide-react';
 import AdminUserManagement from './AdminUserManagement';
